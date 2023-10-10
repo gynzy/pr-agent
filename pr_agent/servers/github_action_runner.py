@@ -49,10 +49,12 @@ async def run_action():
         print(f"Failed to parse JSON: {e}")
         return
 
+    print('handling ' + GITHUB_EVENT_NAME + ' event')
     # Handle pull request event
     if GITHUB_EVENT_NAME == "pull_request":
         action = event_payload.get("action")
-        if action in ["opened", "reopened"]:
+        print('handling ' + action + ' action')
+        if action in ["opened", "reopened", "synchronize", "ready_for_review"]:
             pr_url = event_payload.get("pull_request", {}).get("url")
             if pr_url:
                 auto_review = os.environ.get('github_action.auto_review', None)
@@ -68,6 +70,7 @@ async def run_action():
     # Handle issue comment event
     elif GITHUB_EVENT_NAME == "issue_comment":
         action = event_payload.get("action")
+        print('handling ' + action + ' action')
         if action in ["created", "edited"]:
             comment_body = event_payload.get("comment", {}).get("body")
             if comment_body:
