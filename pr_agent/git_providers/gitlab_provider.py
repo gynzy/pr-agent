@@ -43,7 +43,7 @@ class GitLabProvider(GitProvider):
         self.incremental = incremental
 
     def is_supported(self, capability: str) -> bool:
-        if capability in ['get_issue_comments', 'create_inline_comment', 'publish_inline_comments']:
+        if capability in ['get_issue_comments', 'create_inline_comment', 'publish_inline_comments', 'gfm_markdown']:
             return False
         return True
 
@@ -379,3 +379,10 @@ class GitLabProvider(GitProvider):
         if max_tokens:
             commit_messages_str = clip_tokens(commit_messages_str, max_tokens)
         return commit_messages_str
+
+    def get_pr_id(self):
+        try:
+            pr_id = self.mr.web_url
+            return pr_id
+        except:
+            return ""

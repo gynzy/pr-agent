@@ -59,6 +59,7 @@ class PRReviewer:
             "require_tests": get_settings().pr_reviewer.require_tests_review,
             "require_security": get_settings().pr_reviewer.require_security_review,
             "require_focused": get_settings().pr_reviewer.require_focused_review,
+            "require_estimate_effort_to_review": get_settings().pr_reviewer.require_estimate_effort_to_review,
             'num_code_suggestions': get_settings().pr_reviewer.num_code_suggestions,
             'question_str': question_str,
             'answer_str': answer_str,
@@ -94,28 +95,32 @@ class PRReviewer:
         """
         Review the pull request and generate feedback.
         """
-        if self.is_auto and not get_settings().pr_reviewer.automatic_review:
-            logging.info(f'Automatic review is disabled {self.pr_url}')
-            return None
 
-        logging.info(f'Reviewing PR: {self.pr_url} ...')
+        try:
+            if self.is_auto and not get_settings().pr_reviewer.automatic_review:
+                logging.info(f'Automatic review is disabled {self.pr_url}')
+                return None
 
-        if get_settings().config.publish_output:
-            self.git_provider.publish_comment("Preparing review...", is_temporary=True)
-    
-        await retry_with_fallback_models(self._prepare_prediction)
-    
-        logging.info('Preparing PR review...')
-        pr_comment = self._prepare_pr_review()
-    
-        if get_settings().config.publish_output:
-            logging.info('Pushing PR review...')
-            self.git_provider.publish_comment(pr_comment)
-            self.git_provider.remove_initial_comment()
-        
-            if get_settings().pr_reviewer.inline_code_comments:
-                logging.info('Pushing inline code comments...')
-                self._publish_inline_code_comments()
+            logging.info(f'Reviewing PR: {self.pr_url} ...')
+
+            if get_settings().config.publish_output:
+                self.git_provider.publish_comment("Preparing review...", is_temporary=True)
+
+            await retry_with_fallback_models(self._prepare_prediction)
+
+            logging.info('Preparing PR review...')
+            pr_comment = self._prepare_pr_review()
+
+            if get_settings().config.publish_output:
+                logging.info('Pushing PR review...')
+                self.git_provider.publish_comment(pr_comment)
+                self.git_provider.remove_initial_comment()
+
+                if get_settings().pr_reviewer.inline_code_comments:
+                    logging.info('Pushing inline code comments...')
+                    self._publish_inline_code_comments()
+        except Exception as e:
+            logging.error(f"Failed to review PR: {e}")
 
     async def _prepare_prediction(self, model: str) -> None:
         """
@@ -214,7 +219,7 @@ class PRReviewer:
                 "⏮️ Review for commits since previous PR-Agent review": f"Starting from commit {last_commit_url}"}})
             data.move_to_end('Incremental PR Review', last=False)
 
-        markdown_text = convert_to_markdown(data)
+        markdown_text = convert_to_markdown(data, self.git_provider.is_supported("gfm_markdown"))
         user = self.git_provider.get_user_id()
 
         # Add help text if not in CLI mode
@@ -266,7 +271,7 @@ class PRReviewer:
                 self.git_provider.publish_inline_comment(content, relevant_file, relevant_line_in_file)
 
         if comments:
-            self.git_provider.publish_inline_comments(comments)
+                self.git_provider.publish_inline_comments(comments)
 
     def _get_user_answers(self) -> Tuple[str, str]:
         """

@@ -22,13 +22,13 @@ code line that already existed in the file....
 ...
 '
 
-Thre review should focus on new code added in the PR (lines starting with '+'), and not on code that already existed in the file (lines starting with '-', or without prefix).
+The review should focus on new code added in the PR (lines starting with '+'), and not on code that already existed in the file (lines starting with '-', or without prefix).
 
 {%- if num_code_suggestions > 0 %}
 - Provide up to {{ num_code_suggestions }} code suggestions.
 - Focus on important suggestions like fixing code problems, issues and bugs. As a second priority, provide suggestions for meaningful code improvements, like performance, vulnerability, modularity, and best practices.
 - Avoid making suggestions that have already been implemented in the PR code. For example, if you want to add logs, or change a variable to const, or anything else, make sure it isn't already in the PR code.
-- Don't suggest to add docstring or type hints.
+- Don't suggest to add docstring, type hints, or comments.
 - Suggestions should focus on improving the new code added in the PR (lines starting with '+')
 {%- endif %}
 
@@ -84,6 +84,14 @@ PR Analysis:
       united under a single focused theme ? If the theme is too broad, or the PR
       code diff changes are too scattered, then the PR is not focused. Explain
       your answer shortly.
+{%- endif %}
+{%- if require_estimate_effort_to_review %}
+  Estimated effort to review [1-5]:
+    type: string
+    description: >-
+      Estimate, on a scale of 1-5 (inclusive), the time and effort required to review this PR by an experienced and knowledgeable developer. 1 means short and easy review , 5 means long and hard review.
+      Take into account the size, complexity, quality, and the needed changes of the PR code diff.
+      Explain your answer shortly (1-2 sentences).
 {%- endif %}
 PR Feedback:
   General suggestions:

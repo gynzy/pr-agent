@@ -50,12 +50,12 @@ When running from your local repo (CLI), your local configuration file will be u
 
 Examples for invoking the different tools via the CLI:
 
-- **Review**:       `python cli.py --pr_url=<pr_url>  /review`
-- **Describe**:     `python cli.py --pr_url=<pr_url>  /describe`
-- **Improve**:      `python cli.py --pr_url=<pr_url>  /improve`
-- **Ask**:          `python cli.py --pr_url=<pr_url>  /ask "Write me a poem about this PR"`
-- **Reflect**:      `python cli.py --pr_url=<pr_url>  /reflect`
-- **Update Changelog**:      `python cli.py --pr_url=<pr_url>  /update_changelog`
+- **Review**:       `python cli.py --pr_url=<pr_url>  review`
+- **Describe**:     `python cli.py --pr_url=<pr_url>  describe`
+- **Improve**:      `python cli.py --pr_url=<pr_url>  improve`
+- **Ask**:          `python cli.py --pr_url=<pr_url>  ask "Write me a poem about this PR"`
+- **Reflect**:      `python cli.py --pr_url=<pr_url>  reflect`
+- **Update Changelog**:      `python cli.py --pr_url=<pr_url>  update_changelog`
 
 `<pr_url>` is the url of the relevant PR (for example: https://github.com/Codium-ai/pr-agent/pull/50).
 
@@ -142,7 +142,21 @@ user="""
 Note that the new prompt will need to generate an output compatible with the relevant [post-process function](./pr_agent/tools/pr_description.py#L137).
 
 ### Working with GitHub Action
-TBD
+You can configure settings in GitHub action by adding environment variables under the env section in `.github/workflows/pr_agent.yml` file. Some examples:
+```yaml
+      env:
+        # ... previous environment values
+        OPENAI.ORG: "<Your organization name under your OpenAI account>"
+        PR_REVIEWER.REQUIRE_TESTS_REVIEW: "false" # Disable tests review
+        PR_CODE_SUGGESTIONS.NUM_CODE_SUGGESTIONS: 6 # Increase number of code suggestions
+        github_action.auto_review: "true" # Enable auto review
+        github_action.auto_describe: "true" # Enable auto describe
+        github_action.auto_improve: "false" # Disable auto improve      
+```
+specifically, `github_action.auto_review`, `github_action.auto_describe` and `github_action.auto_improve` are used to enable/disable automatic tools that run when a new PR is opened.
+
+if not set, the default option is that only the `review` tool will run automatically when a new PR is opened.
+
 
 ### Appendix - additional configurations walkthrough
 
@@ -168,6 +182,31 @@ model="" # the OpenAI model you've deployed on Azure (e.g. gpt-3.5-turbo)
 in the configuration.toml 
 
 #### Huggingface
+
+**Local**  
+You can run Huggingface models locally through either [VLLM](https://docs.litellm.ai/docs/providers/vllm) or [Ollama](https://docs.litellm.ai/docs/providers/ollama)
+
+E.g. to use a new Huggingface model locally via Ollama, set:
+```
+[__init__.py]
+MAX_TOKENS = {
+    "model-name-on-ollama": <max_tokens>
+}
+e.g.
+MAX_TOKENS={
+    ...,
+    "llama2": 4096
+}
+
+
+[config] # in configuration.toml
+model = "ollama/llama2"
+
+[ollama] # in .secrets.toml
+api_base = ... # the base url for your huggingface inference endpoint 
+```
+
+**Inference Endpoints**
 
 To use a new model with Huggingface Inference Endpoints, for example, set:
 ```
@@ -223,3 +262,25 @@ And use the following settings (you have to replace the values) in .secrets.toml
 org = "https://dev.azure.com/YOUR_ORGANIZATION/"
 pat = "YOUR_PAT_TOKEN"
 ```
+
+#### Similar issue tool
+
+[Example usage](https://github.com/Alibaba-MIIL/ASL/issues/107)
+
+<img src=./pics/similar_issue_tool.png width="768">
+
+To enable usage of the '**similar issue**' tool, you need to set the following keys in `.secrets.toml` (or in the relevant environment variables):
+```
+[pinecone]
+api_key = "..."
+environment = "..."
+```
+These parameters can be obtained by registering to [Pinecone](https://app.pinecone.io/?sessionType=signup/).
+
+- To invoke the 'similar issue' tool from **CLI**, run:
+`python3 cli.py --issue_url=... similar_issue`
+
+- To invoke the 'similar' issue tool via online usage, [comment](https://github.com/Codium-ai/pr-agent/issues/178#issuecomment-1716934893) on a PR:
+`/similar_issue`
+
+- You can also enable the 'similar issue' tool to run automatically when a new issue is opened, by adding it to the [pr_commands list in the github_app section](https://github.com/Codium-ai/pr-agent/blob/main/pr_agent/settings/configuration.toml#L66)
